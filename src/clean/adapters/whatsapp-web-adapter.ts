@@ -1,7 +1,7 @@
-import qrcode from "qrcode-terminal";
-import { Client, LocalAuth, Chat as WhatsappWebChat } from "whatsapp-web.js";
+import { Client, LocalAuth, Chat as WhatsappWebChat, List as WhatsAppList } from "whatsapp-web.js";
 import {
   Chat,
+  List,
   MessageInterface,
   WhatsappAdapter,
   WhatsappClientInterface,
@@ -23,6 +23,7 @@ export class WhatsappWebJsWhatsappClient implements WhatsappClientInterface {
         time: new Date(),
         isStatus: message.isStatus,
         isGroup: contact.isGroup,
+        selectedRowId: message.selectedRowId,
         sender: {
           id: contact.id.user,
           profileName: contact.pushname,
@@ -32,8 +33,15 @@ export class WhatsappWebJsWhatsappClient implements WhatsappClientInterface {
         },
       };
 
-      //console.log(message);
+      console.log(message);
       cb(formattedMessage);
+    });
+  }
+
+  onAckUpdated() {
+    this.client.on("message_ack", (message, ack) => {
+      console.log(message);
+      console.log(ack);
     });
   }
 
@@ -54,13 +62,27 @@ export class WhatsappWebJsWhatsappClient implements WhatsappClientInterface {
 
     return fomattedChats;
   }
+
+  async sendMessage(number: string, content: List | string) {
+    const contactInfo = await this.client.getNumberId(number);
+
+    let finalContent = content;
+
+    if (typeof content === "object") {
+      const listContent = content as List;
+      finalContent = new WhatsAppList(
+        listContent.body,
+        listContent.buttonText,
+        listContent.sections
+      );
+    }
+
+    await this.client.sendMessage(contactInfo._serialized, finalContent);
+  }
 }
 
 export class WhatsappWebJsAdapter implements WhatsappAdapter {
-  async create(
-    id: string,
-    onQr: (qr: string) => void
-  ): Promise<WhatsappClientInterface> {
+  async create(id: string, onQr: (qr: string) => void): Promise<WhatsappClientInterface> {
     console.log(`[${id}] CREATING CLIENT...`);
 
     const createdClient = await new Promise<Client>(async (resolve) => {

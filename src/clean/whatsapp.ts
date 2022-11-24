@@ -7,6 +7,7 @@ export interface MessageInterface {
   isStatus: boolean;
   time: Date;
   sender: SenderInterface;
+  selectedRowId?: string;
 }
 
 export interface SenderInterface {
@@ -26,16 +27,32 @@ export interface Chat {
   isGroup: boolean;
 }
 
+export interface Section {
+  title: string;
+  rows: {
+    id: string;
+    title: string;
+    description: string;
+  }[];
+}
+
+export interface List {
+  body: string;
+  buttonText: string;
+  sections: Section[];
+  title?: string;
+  footer?: string;
+}
+
 //generic contract for implementation
 export interface WhatsappClientInterface {
   onMessage(cb: (message: MessageInterface) => void);
   getUnreadChats(): Promise<Chat[]>;
+  sendMessage(number: string, content: List | any);
+  onAckUpdated();
 }
 
 //generic contract for implementation
 export interface WhatsappAdapter {
-  create(
-    id: string,
-    onQr: (qr: string) => void
-  ): Promise<WhatsappClientInterface>;
+  create(id: string, onQr: (qr: string) => void): Promise<WhatsappClientInterface>;
 }
